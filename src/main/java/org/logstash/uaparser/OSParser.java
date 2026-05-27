@@ -116,23 +116,23 @@ final class OSParser {
             if (this.v1Replacement != null) {
                 v1 = getReplacement(matcher, v1Replacement);
             } else if (groupCount >= 2) {
-                v1 = this.matcher.group(2);
+                v1 = emptyToNull(this.matcher.group(2));
             }
             String v2 = null;
             if (this.v2Replacement != null) {
                 v2 = getReplacement(matcher, v2Replacement);
             } else if (groupCount >= 3) {
-                v2 = this.matcher.group(3);
+                v2 = emptyToNull(this.matcher.group(3));
             }
             String v3 = null;
             if (this.v3Replacement != null) {
                 v3 = getReplacement(matcher, v3Replacement);
             } else if (groupCount >= 4) {
-                v3 = this.matcher.group(4);
+                v3 = emptyToNull(this.matcher.group(4));
             }
             String v4 = null;
             if (groupCount >= 5) {
-                v4 = this.matcher.group(5);
+                v4 = emptyToNull(this.matcher.group(5));
             }
             return family == null ? null : new OS(family, v1, v2, v3, v4);
         }
@@ -140,7 +140,7 @@ final class OSParser {
         private String getReplacement(Matcher matcher, String replacement) {
             if (isBackReference(replacement)) {
                 int group = getGroup(replacement);
-                return matcher.group(group);
+                return emptyToNull(matcher.group(group));
             } else {
                 return replacement;
             }
@@ -158,6 +158,14 @@ final class OSParser {
          */
         private int getGroup(String backReference) {
             return Integer.valueOf(backReference.substring(1));
+        }
+
+        /**
+         * Normalizes empty capture groups to null, consistent with ES's Strings.hasLength() in versionToString().
+         * @see https://github.com/elastic/elasticsearch/blob/main/modules/user-agent/src/main/java/org/elasticsearch/useragent/UserAgentParserImpl.java#L212
+         */
+        private static String emptyToNull(String value) {
+            return (value == null || value.isEmpty()) ? null : value;
         }
     }
 }

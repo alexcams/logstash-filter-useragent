@@ -1,0 +1,112 @@
+# Custom regex overrides for logstash-filter-useragent.
+#
+# This file contains entries NOT yet present (or corrected from) the upstream
+# ua-parser/uap-core regexes.yaml.  At build time the merge script
+# (scripts/merge_regexes.py) combines the upstream file with this one:
+#
+#   - "additions" are prepended to each section so they match before upstream.
+#   - "replacements" swap specific upstream regexes with corrected versions.
+#
+# When upstream incorporates a fix or addition listed here, remove it from
+# this file to avoid duplicates.
+
+# --------------------------------------------------------------------------
+# New entries — prepended to each parser section (matched before upstream)
+# --------------------------------------------------------------------------
+
+# LLM and AI Bots
+# Follows the same format as https://github.com/ua-parser/uap-core/pull/643
+# Remove entries here once that PR (or equivalent) is merged upstream.
+user_agent_parsers:
+  # OpenAI
+  - regex: '(ChatGPT-User)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'ChatGPT-User'
+  - regex: '(ChatGPT-User)'
+    family_replacement: 'ChatGPT-User'
+  - regex: '(OAI-SearchBot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'OAI-SearchBot'
+  - regex: '(OAI-SearchBot)'
+    family_replacement: 'OAI-SearchBot'
+  # Anthropic
+  - regex: '(ClaudeBot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'ClaudeBot'
+  - regex: '(ClaudeBot)'
+    family_replacement: 'ClaudeBot'
+  - regex: '(Claude-Web)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Claude-Web'
+  - regex: '(Claude-Web)'
+    family_replacement: 'Claude-Web'
+  # Google
+  - regex: '(Google-Extended)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Google-Extended'
+  - regex: '(Google-Extended)'
+    family_replacement: 'Google-Extended'
+  - regex: '(Google-CloudVertexBot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Google-CloudVertexBot'
+  - regex: '(Google-CloudVertexBot)'
+    family_replacement: 'Google-CloudVertexBot'
+  # Perplexity
+  - regex: '(PerplexityBot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'PerplexityBot'
+  - regex: '(PerplexityBot)'
+    family_replacement: 'PerplexityBot'
+  # Meta
+  - regex: '(Meta-ExternalAgent)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Meta-ExternalAgent'
+  - regex: '(Meta-ExternalAgent)'
+    family_replacement: 'Meta-ExternalAgent'
+  # Common Crawl
+  - regex: '(CCBot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'CCBot'
+  - regex: '(CCBot)'
+    family_replacement: 'CCBot'
+  # Amazon
+  - regex: '(Amazonbot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Amazonbot'
+  - regex: '(Amazonbot)'
+    family_replacement: 'Amazonbot'
+  # Apple
+  - regex: '(Applebot-Extended)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Applebot-Extended'
+  - regex: '(Applebot-Extended)'
+    family_replacement: 'Applebot-Extended'
+  - regex: '(Applebot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Applebot'
+  - regex: '(Applebot)'
+    family_replacement: 'Applebot'
+  # Mistral
+  - regex: '(MistralAI-User)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'MistralAI-User'
+  - regex: '(MistralAI-User)'
+    family_replacement: 'MistralAI-User'
+  # DeepSeek
+  - regex: '(DeepSeekBot)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'DeepSeekBot'
+  - regex: '(DeepSeekBot)'
+    family_replacement: 'DeepSeekBot'
+  # ByteDance
+  - regex: '(Bytespider)/(\d+)\.(\d+)(?:\.(\d+)|)'
+    family_replacement: 'Bytespider'
+  - regex: '(Bytespider)'
+    family_replacement: 'Bytespider'
+
+os_parsers: []
+
+device_parsers: []
+
+# --------------------------------------------------------------------------
+# Replacements — fix specific upstream regexes
+#
+# Each entry must have:
+#   section:  the parser section the regex belongs to (e.g. os_parsers)
+#   original: the exact upstream regex string to find
+#   replacement: the corrected regex string to use instead
+# --------------------------------------------------------------------------
+replacements:
+  # Work-around a regression with extracting Mac OS X version.
+  # Without the '?' the greedy .{1,50} quantifier would extract
+  # major: '18', minor: '2' from agent strings like:
+  # "MacOutlook/16.24.0.190414 (Intelx64 Mac OS X Version 10.14.4 (Build 18E226))"
+  - section: os_parsers
+    original: 'Mac OS X\s.{1,50}\s(\d+).(\d+).(\d+)'
+    replacement: 'Mac OS X\s.{1,50}?\s(\d+).(\d+).(\d+)'
