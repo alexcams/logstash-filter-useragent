@@ -48,26 +48,11 @@ jobs:
             src/main/resources/regexes-overrides.yaml \
             /tmp/regexes_merged.yaml
 
-      - name: Generate change summary
-        if: steps.uapcore.outputs.changed == 'true'
-        id: summary
-        run: |
-          {
-            echo 'upstream_diff<<EOF'
-            diff -u src/main/resources/regexes-ua-parser.yaml /tmp/regexes_upstream.yaml || true
-            echo 'EOF'
-            echo 'merged_diff<<EOF'
-            diff -u src/main/resources/regexes.yaml /tmp/regexes_merged.yaml || true
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-
       - name: Update vendored upstream regexes
         if: steps.uapcore.outputs.changed == 'true'
-        run: cp /tmp/regexes_upstream.yaml src/main/resources/regexes-ua-parser.yaml
-
-      - name: Update merged regexes.yaml
-        if: steps.uapcore.outputs.changed == 'true'
-        run: cp /tmp/regexes_merged.yaml src/main/resources/regexes.yaml
+        run: |
+          cp /tmp/regexes_upstream.yaml src/main/resources/regexes-ua-parser.yaml
+          cp /tmp/regexes_merged.yaml src/main/resources/regexes.yaml
 
       - name: Update uap-core commit SHA in build.gradle
         if: steps.uapcore.outputs.changed == 'true'
@@ -97,21 +82,3 @@ jobs:
             - `src/main/resources/regexes.yaml` (final merged file)
 
             Please review both diffs below to ensure no regressions are introduced.
-
-            <details>
-            <summary>Diff for upstream source file (regexes-ua-parser.yaml)</summary>
-
-            ```diff
-            ${{ steps.summary.outputs.upstream_diff }}
-            ```
-
-            </details>
-
-            <details>
-            <summary>Diff for final merged file (regexes.yaml)</summary>
-
-            ```diff
-            ${{ steps.summary.outputs.merged_diff }}
-            ```
-
-            </details>
