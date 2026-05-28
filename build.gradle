@@ -59,8 +59,9 @@ repositories {
 }
 
 // Test YAML files are downloaded from ua-parser/uap-core at build time.
-// Pinned to the same commit as the vendored src/main/resources/regexes-ua-parser.yaml
-// so that test expectations stay in sync with the upstream source regex database.
+// Pinned to the same commit used by .github/workflows/update-regexes.yml
+// to generate src/main/resources/regexes.yaml from upstream + overrides.
+// This keeps test expectations in sync with the regex database source.
 // Updated automatically by .github/workflows/update-regexes.yml.
 String uapCoreCommit = 'f87f3a9aea3916399d70e5cb2c2aedea5008d881'
 String yamlTestResourceRoot = "https://raw.githubusercontent.com/ua-parser/uap-core/${uapCoreCommit}"
