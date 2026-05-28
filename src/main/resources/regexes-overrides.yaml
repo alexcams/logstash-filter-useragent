@@ -7,6 +7,9 @@
 #   - "additions" are prepended to each section so they match before upstream.
 #   - "replacements" swap specific upstream regexes with corrected versions.
 #
+# **Important:** After editing this file, regenerate src/main/resources/regexes.yaml with:
+#   python3 scripts/merge_regexes.py src/main/resources/regexes-ua-parser.yaml src/main/resources/regexes-overrides.yaml src/main/resources/regexes.yaml
+#
 # When upstream incorporates a fix or addition listed here, remove it from
 # this file to avoid duplicates.
 

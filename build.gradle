@@ -59,8 +59,8 @@ repositories {
 }
 
 // Test YAML files are downloaded from ua-parser/uap-core at build time.
-// Pinned to the same commit as the vendored src/main/resources/regexes.yaml
-// so that test expectations stay in sync with the regex database.
+// Pinned to the same commit as the vendored src/main/resources/regexes-ua-parser.yaml
+// so that test expectations stay in sync with the upstream source regex database.
 // Updated automatically by .github/workflows/update-regexes.yml.
 String uapCoreCommit = 'f87f3a9aea3916399d70e5cb2c2aedea5008d881'
 String yamlTestResourceRoot = "https://raw.githubusercontent.com/ua-parser/uap-core/${uapCoreCommit}"
@@ -79,40 +79,6 @@ task downloadTestYaml(type: Download, overwrite: false) {
   dest buildDir.toPath().resolve('resources/test').toFile()
 }
 
-// Merge vendored upstream regexes.yaml with local overrides at build time.
-// The merged file is written to build/resources/main/regexes.yaml and is what
-// ends up on the classpath (and inside the shadow JAR).
-task mergeRegexes(type: Exec) {
-  def upstreamFile = file('src/main/resources/regexes.yaml')
-  def overridesFile = file('src/main/resources/regexes-overrides.yaml')
-  def outputFile = buildDir.toPath().resolve('resources/main/regexes.yaml').toFile()
-
-  inputs.file upstreamFile
-  inputs.file overridesFile
-  outputs.file outputFile
-
-  dependsOn processResources
-
-  doFirst {
-    outputFile.parentFile.mkdirs()
-  }
-
-  commandLine 'python3', 'scripts/merge_regexes.py',
-    upstreamFile.absolutePath,
-    overridesFile.absolutePath,
-    outputFile.absolutePath
-}
-
-// Exclude the raw upstream regexes.yaml and overrides from processResources
-// so they don't overwrite the merged output produced by mergeRegexes.
-processResources {
-  exclude 'regexes.yaml'
-  exclude 'regexes-overrides.yaml'
-}
-
-// compileTestJava reads from build/resources/main/ which mergeRegexes writes to.
-compileTestJava.dependsOn mergeRegexes
-
 dependencies {
   implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
   implementation group: 'org.yaml', name: 'snakeyaml', version: '2.0'
@@ -124,7 +90,7 @@ dependencies {
 }
 
 test {
-  dependsOn 'downloadTestYaml', 'mergeRegexes'
+  dependsOn 'downloadTestYaml'
   minHeapSize = "256m"
   maxHeapSize = "1024m"
 
@@ -136,7 +102,6 @@ test {
 }
 
 shadowJar {
-  dependsOn 'mergeRegexes'
   archiveClassifier.set('')
 }
 

@@ -1,4 +1,4 @@
-name: Update regexes.yaml from ua-parser/uap-core
+name: Update regexes files from ua-parser/uap-core
 
 on:
   schedule:
@@ -40,19 +40,34 @@ jobs:
             "https://raw.githubusercontent.com/ua-parser/uap-core/${UAP_COMMIT}/regexes.yaml" \
             -o /tmp/regexes_upstream.yaml
 
+      - name: Generate merged regexes.yaml
+        if: steps.uapcore.outputs.changed == 'true'
+        run: |
+          python3 scripts/merge_regexes.py \
+            /tmp/regexes_upstream.yaml \
+            src/main/resources/regexes-overrides.yaml \
+            /tmp/regexes_merged.yaml
+
       - name: Generate change summary
         if: steps.uapcore.outputs.changed == 'true'
         id: summary
         run: |
           {
-            echo 'diff<<EOF'
-            diff -u src/main/resources/regexes.yaml /tmp/regexes_upstream.yaml || true
+            echo 'upstream_diff<<EOF'
+            diff -u src/main/resources/regexes-ua-parser.yaml /tmp/regexes_upstream.yaml || true
+            echo 'EOF'
+            echo 'merged_diff<<EOF'
+            diff -u src/main/resources/regexes.yaml /tmp/regexes_merged.yaml || true
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Update vendored regexes.yaml
+      - name: Update vendored upstream regexes
         if: steps.uapcore.outputs.changed == 'true'
-        run: cp /tmp/regexes_upstream.yaml src/main/resources/regexes.yaml
+        run: cp /tmp/regexes_upstream.yaml src/main/resources/regexes-ua-parser.yaml
+
+      - name: Update merged regexes.yaml
+        if: steps.uapcore.outputs.changed == 'true'
+        run: cp /tmp/regexes_merged.yaml src/main/resources/regexes.yaml
 
       - name: Update uap-core commit SHA in build.gradle
         if: steps.uapcore.outputs.changed == 'true'
@@ -65,24 +80,38 @@ jobs:
         if: steps.uapcore.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "Update regexes.yaml from ua-parser/uap-core"
+          commit-message: "Update regexes from ua-parser/uap-core"
           branch: automation/update-regexes
           delete-branch: true
-          title: "Update regexes.yaml from ua-parser/uap-core"
+          title: "Update regexes from ua-parser/uap-core"
           body: |
-            This PR updates the vendored `regexes.yaml` with the latest changes
-            from [ua-parser/uap-core master](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
+            This PR updates `regexes-ua-parser.yaml` from
+            [ua-parser/uap-core master](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
-            Local overrides from `regexes-overrides.yaml` are applied automatically
-            at build time — no manual patching is needed.
+            It also regenerates the final `regexes.yaml` by merging upstream
+            with `regexes-overrides.yaml`.
 
-            Please review the regex changes below to ensure no regressions are introduced.
+            Repository file layout:
+            - `src/main/resources/regexes-ua-parser.yaml` (upstream source)
+            - `src/main/resources/regexes-overrides.yaml` (local overrides)
+            - `src/main/resources/regexes.yaml` (final merged file)
+
+            Please review both diffs below to ensure no regressions are introduced.
 
             <details>
-            <summary>Diff against current vendored file</summary>
+            <summary>Diff for upstream source file (regexes-ua-parser.yaml)</summary>
 
             ```diff
-            ${{ steps.summary.outputs.diff }}
+            ${{ steps.summary.outputs.upstream_diff }}
+            ```
+
+            </details>
+
+            <details>
+            <summary>Diff for final merged file (regexes.yaml)</summary>
+
+            ```diff
+            ${{ steps.summary.outputs.merged_diff }}
             ```
 
             </details>
