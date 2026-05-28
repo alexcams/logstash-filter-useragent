@@ -1,0 +1,88 @@
+name: Update merged regexes from ua-parser/uap-core
+
+on:
+  schedule:
+    # Run on the 1st of every month at 09:00 UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-regexes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check if uap-core has new commits
+        id: uapcore
+        run: |
+          COMMIT=$(git ls-remote https://github.com/ua-parser/uap-core.git refs/heads/master | awk '{print $1}')
+          CURRENT=$(grep "^String uapCoreCommit" build.gradle | sed "s/.*'\(.*\)'.*/\1/")
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          if [ "$COMMIT" = "$CURRENT" ]; then
+            echo "uap-core HEAD ($COMMIT) matches current pin — nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "uap-core HEAD ($COMMIT) differs from current pin ($CURRENT)."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download latest regexes.yaml from uap-core
+        if: steps.uapcore.outputs.changed == 'true'
+        env:
+          UAP_COMMIT: ${{ steps.uapcore.outputs.commit }}
+        run: |
+          curl -sSfL \
+            "https://raw.githubusercontent.com/ua-parser/uap-core/${UAP_COMMIT}/regexes.yaml" \
+            -o /tmp/regexes_upstream.yaml
+
+      - name: Generate merged regexes.yaml
+        if: steps.uapcore.outputs.changed == 'true'
+        run: |
+          python3 scripts/merge_regexes.py \
+            /tmp/regexes_upstream.yaml \
+            src/main/resources/regexes-overrides.yaml \
+            /tmp/regexes_merged.yaml
+
+      - name: Validate YAML format
+        if: steps.uapcore.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          ruby -e "require 'yaml'; YAML.load_file('/tmp/regexes_upstream.yaml')"
+          ruby -e "require 'yaml'; YAML.load_file('src/main/resources/regexes-overrides.yaml')"
+          ruby -e "require 'yaml'; YAML.load_file('/tmp/regexes_merged.yaml')"
+
+      - name: Update merged regexes.yaml
+        if: steps.uapcore.outputs.changed == 'true'
+        run: |
+          cp /tmp/regexes_merged.yaml src/main/resources/regexes.yaml
+
+      - name: Update uap-core commit SHA in build.gradle
+        if: steps.uapcore.outputs.changed == 'true'
+        env:
+          UAP_COMMIT: ${{ steps.uapcore.outputs.commit }}
+        run: |
+          sed -i "s/^String uapCoreCommit = '.*'/String uapCoreCommit = '${UAP_COMMIT}'/" build.gradle
+
+      - name: Create Pull Request
+        if: steps.uapcore.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "Update regexes from ua-parser/uap-core"
+          branch: automation/update-regexes
+          delete-branch: true
+          title: "Update regexes from ua-parser/uap-core"
+          body: |
+            This PR updates the final merged `regexes.yaml` using the latest
+            [ua-parser/uap-core master](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml)
+            and local `regexes-overrides.yaml`.
+
+            Repository file layout:
+            - `src/main/resources/regexes-overrides.yaml` (local overrides)
+            - `src/main/resources/regexes.yaml` (final merged file)
+
+            Please review the merged regex changes to ensure no regressions are introduced.
