@@ -1,5 +1,4 @@
 import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.Verify
 import java.nio.file.Files
 import java.nio.file.Paths
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
@@ -59,50 +58,26 @@ repositories {
   mavenCentral()
 }
 
-String yamlResourceRoot = 'https://raw.githubusercontent.com/ua-parser/uap-core/v0.12.0'
-def yamlTempDir = File.createTempDir()
-def yamlTempFile = yamlTempDir.toPath().resolve('regexes.yaml')
-task downloadYaml(type: Download, overwrite: false) {
-  src yamlResourceRoot + '/regexes.yaml'
-  dest yamlTempFile.toFile()
-}
-
-task patchYaml(type: Copy, dependsOn: [downloadYaml]) {
-  from yamlTempFile
-  into buildDir.toPath().resolve('resources/main')
-  filteringCharset 'UTF-8'
-  filter { line ->
-    // work-around a 'regression' with extracting Mac OS version, without the '?'
-    // the pattern would extract major: '18', minor: '2' from agent strings like:
-    // "MacOutlook/16.24.0.190414 (Intelx64 Mac OS X Version 10.14.4 (Build 18E226))"
-    line.replace("- regex: 'Mac OS X\\s.{1,50}\\s(\\d+).(\\d+).(\\d+)'", "- regex: 'Mac OS X\\s.{1,50}?\\s(\\d+).(\\d+).(\\d+)'")
-  }
-}
-
-// testJava tasks uses the patched yaml, so make explicit the dependency.
-tasks.getByPath(":compileTestJava").configure {
-  dependsOn patchYaml
-}
+// Test YAML files are downloaded from ua-parser/uap-core at build time.
+// Pinned to the same commit used by .github/workflows/update-regexes.yml
+// to generate src/main/resources/regexes.yaml from upstream + overrides.
+// This keeps test expectations in sync with the regex database source.
+// Updated automatically by .github/workflows/update-regexes.yml.
+String uapCoreCommit = '0f9aba8d05140e56905833554f637ca0b7c9c1bf'
+String yamlTestResourceRoot = "https://raw.githubusercontent.com/ua-parser/uap-core/${uapCoreCommit}"
 
 task downloadTestYaml(type: Download, overwrite: false) {
   src([
-    yamlResourceRoot + '/test_resources/additional_os_tests.yaml',
-    yamlResourceRoot + '/test_resources/firefox_user_agent_strings.yaml',
-    yamlResourceRoot + '/test_resources/opera_mini_user_agent_strings.yaml',
-    yamlResourceRoot + '/test_resources/pgts_browser_list.yaml',
-    yamlResourceRoot + '/test_resources/pgts_browser_list-orig.yaml',
-    yamlResourceRoot + '/tests/test_device.yaml',
-    yamlResourceRoot + '/tests/test_os.yaml',
-    yamlResourceRoot + '/tests/test_ua.yaml'
+    yamlTestResourceRoot + '/test_resources/additional_os_tests.yaml',
+    yamlTestResourceRoot + '/test_resources/firefox_user_agent_strings.yaml',
+    yamlTestResourceRoot + '/test_resources/opera_mini_user_agent_strings.yaml',
+    yamlTestResourceRoot + '/test_resources/pgts_browser_list.yaml',
+    yamlTestResourceRoot + '/test_resources/pgts_browser_list-orig.yaml',
+    yamlTestResourceRoot + '/tests/test_device.yaml',
+    yamlTestResourceRoot + '/tests/test_os.yaml',
+    yamlTestResourceRoot + '/tests/test_ua.yaml'
   ])
   dest buildDir.toPath().resolve('resources/test').toFile()
-}
-
-task verifyYaml(type: Verify, dependsOn: [patchYaml, processResources]) {
-  inputs.file("${buildDir}/resources/main/regexes.yaml")
-  src buildDir.toPath().resolve('resources/main/regexes.yaml').toFile()
-  algorithm 'SHA1'
-  checksum '5a8ea18a9c9153e83159b8662e3f6650fbca60a8' // after replacement
 }
 
 dependencies {
@@ -116,7 +91,6 @@ dependencies {
 }
 
 test {
-  dependsOn 'verifyYaml'
   dependsOn 'downloadTestYaml'
   minHeapSize = "256m"
   maxHeapSize = "1024m"
@@ -129,7 +103,6 @@ test {
 }
 
 shadowJar {
-  dependsOn 'verifyYaml'
   archiveClassifier.set('')
 }
 

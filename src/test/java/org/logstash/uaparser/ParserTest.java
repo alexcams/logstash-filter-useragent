@@ -94,6 +94,11 @@ public class ParserTest {
   }
 
   @Test
+  public void testParseOverrides() {
+    testUserAgentFromYaml("regexes_overrides_test.yaml");
+  }
+
+  @Test
   public void testParseAll() {
     String agentString1 = "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; fr; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5,gzip(gfe),gzip(gfe)";
     String agentString2 = "Mozilla/5.0 (iPhone; CPU iPhone OS 5_1_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9B206 Safari/7534.48.3";
