@@ -1,0 +1,20 @@
+# Test cases for user-agent entries introduced in src/main/resources/regexes-overrides.yaml
+
+test_cases:
+  - user_agent_string: 'Mozilla/5.0 (compatible; ChatGPT-User/1.2.3; +https://openai.com/bot)'
+    family: 'ChatGPT-User'
+    major: '1'
+    minor: '2'
+    patch: '3'
+
+  - user_agent_string: 'Mozilla/5.0 (compatible; OAI-SearchBot/0.9.0; +https://openai.com/searchbot)'
+    family: 'OAI-SearchBot'
+    major: '0'
+    minor: '9'
+    patch: '0'
+
+  - user_agent_string: 'Mozilla/5.0 (compatible; PerplexityBot/2.1.0; +https://www.perplexity.ai/perplexitybot)'
+    family: 'PerplexityBot'
+    major: '2'
+    minor: '1'
+    patch: '0'
