@@ -63,7 +63,7 @@ repositories {
 // to generate src/main/resources/regexes.yaml from upstream + overrides.
 // This keeps test expectations in sync with the regex database source.
 // Updated automatically by .github/workflows/update-regexes.yml.
-String uapCoreCommit = '432e95f6767cc8bab4c20c255784cd6f7e93bc15'
+String uapCoreCommit = 'f87f3a9aea3916399d70e5cb2c2aedea5008d881'
 String yamlTestResourceRoot = "https://raw.githubusercontent.com/ua-parser/uap-core/${uapCoreCommit}"
 
 task downloadTestYaml(type: Download, overwrite: false) {
