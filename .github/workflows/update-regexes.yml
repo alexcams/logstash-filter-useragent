@@ -48,6 +48,14 @@ jobs:
             src/main/resources/regexes-overrides.yaml \
             /tmp/regexes_merged.yaml
 
+      - name: Validate YAML format
+        if: steps.uapcore.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          ruby -e "require 'yaml'; YAML.load_file('/tmp/regexes_upstream.yaml')"
+          ruby -e "require 'yaml'; YAML.load_file('src/main/resources/regexes-overrides.yaml')"
+          ruby -e "require 'yaml'; YAML.load_file('/tmp/regexes_merged.yaml')"
+
       - name: Update vendored upstream regexes
         if: steps.uapcore.outputs.changed == 'true'
         run: |
